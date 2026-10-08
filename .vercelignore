@@ -1,0 +1,11 @@
+.env*
+.git/
+.next/
+.next-*/
+node_modules/
+*.tsbuildinfo
+test-results/
+playwright-report/
+work/
+my-backup*/
+*.zip
