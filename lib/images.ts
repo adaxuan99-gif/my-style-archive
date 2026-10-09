@@ -1,4 +1,23 @@
-export const MAX_INPUT = 20 * 1024 * 1024;
+// 只限制明显异常的文件；常见 iPhone 原图可能超过 20MB，必须先尝试
+// 在浏览器内处理副本，不能在压缩前直接拒绝。
+export const MAX_INPUT = 200 * 1024 * 1024;
+export const SUPPORTED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+] as const;
+export function validateImageInput(file: Pick<Blob, "size" | "type">) {
+  if (file.size > MAX_INPUT)
+    throw new Error("这张照片超过 200MB，手机浏览器无法安全处理。");
+  if (
+    !SUPPORTED_IMAGE_TYPES.includes(
+      file.type as (typeof SUPPORTED_IMAGE_TYPES)[number],
+    )
+  )
+    throw new Error("请选择 JPEG、PNG、WebP 或可被 Safari 读取的 HEIC 图片。");
+}
 export async function loadImage(file: Blob): Promise<HTMLImageElement> {
   const url = URL.createObjectURL(file);
   try {
@@ -21,17 +40,7 @@ export async function compressImage(
   file: File | Blob,
   crop?: { x: number; y: number; size: number },
 ) {
-  if (file.size > MAX_INPUT) throw new Error("单张原图不能超过 20MB。");
-  if (
-    ![
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "image/heic",
-      "image/heif",
-    ].includes(file.type)
-  )
-    throw new Error("请选择 JPEG、PNG、WebP 或可被 Safari 读取的 HEIC 图片。");
+  validateImageInput(file);
   const image = await loadImage(file);
   if (image.naturalWidth * image.naturalHeight > 60000000)
     throw new Error("图片分辨率过大，请先缩小后上传。");
