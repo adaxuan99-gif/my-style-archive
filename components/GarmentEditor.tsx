@@ -75,12 +75,22 @@ export default function GarmentEditor({
     setBusy(true);
     setError("");
     const added: DraftPhoto[] = [];
+    const failures: string[] = [];
     try {
       for (let i = 0; i < files.length; i++) {
         setProgress(`处理照片 ${i + 1} / ${files.length}`);
-        added.push(localPhoto(await compressImage(files[i])));
+        try {
+          // 逐张处理，避免同时解码多张 iPhone 原图；失败的照片不阻断其他照片。
+          added.push(localPhoto(await compressImage(files[i])));
+        } catch (error) {
+          failures.push(`${i + 1}: ${friendlyError(error)}`);
+        }
       }
       setPhotos((p) => [...p, ...added]);
+      if (failures.length)
+        setError(
+          `有 ${failures.length} 张照片未处理，其他照片仍可继续上传：\n${failures.join("\n")}`,
+        );
     } catch (e) {
       setError(friendlyError(e));
     } finally {
